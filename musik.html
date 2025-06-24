@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemutar Musik Sederhana</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #121212; /* Dark background similar to Spotify */
+            color: #ffffff; /* White text */
+        }
+        /* Custom scrollbar for song list */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #282828;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #535353;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #727272;
+        }
+        /* Custom styling for range input (progress bar) */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px; /* Increased size */
+            height: 16px; /* Increased size */
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(29, 185, 84, 0.4); /* Glow effect */
+            transition: background .15s ease-in-out;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px; /* Increased size */
+            height: 16px; /* Increased size */
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(29, 185, 84, 0.4); /* Glow effect */
+            transition: background .15s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
+    <div class="bg-[#1e1e1e] rounded-xl shadow-2xl p-6 sm:p-8 md:p-10 w-full max-w-md mx-auto flex flex-col items-center">
+        <!-- Header -->
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-[#1db954]">Pemutar Musik Anda</h1>
+        <p class="text-sm text-gray-400 text-center mb-8">Unggah file audio Anda (MP3, WAV, dll.) untuk mulai mendengarkan.</p>
+
+        <!-- Current Song Display -->
+        <div class="w-full text-center mb-8">
+            <div class="aspect-w-1 aspect-h-1 w-3/4 sm:w-2/3 mx-auto mb-4 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center">
+                <!-- Placeholder for album art or a music icon -->
+                <svg class="w-24 h-24 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3a9 9 0 000 18c4.97 0 9-4.03 9-9h-9V3z"/>
+                    <path d="M12 3v9h9a9 9 0 00-9-9z"/>
+                </svg>
+            </div>
+            <h2 id="current-song-title" class="text-2xl font-semibold text-white truncate">Tidak ada lagu yang sedang diputar</h2>
+            <p id="current-song-artist" class="text-lg text-gray-400 truncate">Unggah lagu untuk memulai</p>
+        </div>
+
+        <!-- Audio Player Controls -->
+        <audio id="audio-player" class="hidden"></audio>
+        <div class="w-full flex items-center justify-center space-x-4 mb-8">
+            <button id="prev-btn" class="p-3 rounded-full bg-[#282828] hover:bg-[#3e3e3e] focus:outline-none focus:ring-2 focus:ring-[#1db954] focus:ring-opacity-75 transition duration-300 ease-in-out">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                </svg>
+            </button>
+            <button id="play-pause-btn" class="p-4 rounded-full bg-[#1db954] hover:bg-[#1ed760] focus:outline-none focus:ring-2 focus:ring-[#1db954] focus:ring-opacity-75 transition duration-300 ease-in-out">
+                <svg id="play-icon" class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg id="pause-icon" class="w-8 h-8 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
+                </svg>
+            </button>
+            <button id="next-btn" class="p-3 rounded-full bg-[#282828] hover:bg-[#3e3e3e] focus:outline-none focus:ring-2 focus:ring-[#1db954] focus:ring-opacity-75 transition duration-300 ease-in-out">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18 6h-2v12h2zm-9.5 6L14 6v12z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Progress Bar and Time Display -->
+        <div class="w-full flex items-center space-x-2 mb-8">
+            <span id="current-time" class="text-sm text-gray-400">0:00</span>
+            <input type="range" id="progress-bar" value="0" min="0" max="100" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#1db954]">
+            <span id="duration" class="text-sm text-gray-400">0:00</span>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="w-full mb-8">
+            <label for="file-upload" class="flex items-center justify-center px-4 py-3 bg-[#1db954] text-white rounded-lg cursor-pointer hover:bg-[#1ed760] transition duration-300 ease-in-out text-base font-medium">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/>
+                </svg>
+                Unggah Lagu
+            </label>
+            <input type="file" id="file-upload" accept="audio/*" multiple class="hidden">
+        </div>
+
+        <!-- Song List -->
+        <div class="w-full">
+            <h3 class="text-xl font-semibold mb-4">Daftar Lagu (Klik untuk Memutar)</h3>
+            <ul id="song-list" class="bg-[#282828] rounded-lg p-4 max-h-64 sm:max-h-80 overflow-y-auto w-full">
+                <li class="py-2 text-gray-400 text-center">Belum ada lagu. Unggah beberapa!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements initialization
+        const audioPlayer = document.getElementById('audio-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const fileUpload = document.getElementById('file-upload');
+        const songListElement = document.getElementById('song-list');
+        const currentSongTitle = document.getElementById('current-song-title');
+        const currentSongArtist = document.getElementById('current-song-artist');
+        const progressBar = document.getElementById('progress-bar');
+        const currentTimeSpan = document.getElementById('current-time');
+        const durationSpan = document.getElementById('duration');
+
+        // Playlist array
+        let playlist = [];
+        let currentSongIndex = -1;
+
+        // Function to format time (e.g., 0:00 -> 00:00)
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Handle file upload
+        fileUpload.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files.length > 0) {
+                playlist = []; // Clear current playlist for new uploads
+                songListElement.innerHTML = ''; // Clear UI list
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileURL = URL.createObjectURL(file);
+                    playlist.push({
+                        name: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+                        src: fileURL,
+                        file: file
+                    });
+                }
+                renderPlaylist(); // Render updated playlist in UI
+
+                // Play the first song if available
+                if (playlist.length > 0) {
+                    currentSongIndex = 0;
+                    loadAndPlaySong(currentSongIndex);
+                }
+            }
+        });
+
+        // Render playlist in UI
+        function renderPlaylist() {
+            songListElement.innerHTML = ''; // Clear existing list
+            if (playlist.length === 0) {
+                songListElement.innerHTML = '<li class="py-2 text-gray-400 text-center">Belum ada lagu. Unggah beberapa!</li>';
+                return;
+            }
+
+            playlist.forEach((song, index) => {
+                const listItem = document.createElement('li');
+                listItem.classList.add(
+                    'py-2', 'px-3', 'rounded-md', 'cursor-pointer',
+                    'hover:bg-[#3a3a3a]', 'transition', 'duration-200', 'ease-in-out',
+                    'flex', 'items-center', 'justify-between', 'group', 'text-white'
+                );
+                listItem.textContent = song.name;
+                listItem.dataset.index = index;
+
+                // Highlight currently playing song
+                if (index === currentSongIndex) {
+                    listItem.classList.remove('text-white');
+                    listItem.classList.add('bg-[#1db954]', 'text-white', 'font-medium', 'shadow-md'); // Stronger highlight
+                    const playingIndicator = document.createElement('span');
+                    playingIndicator.innerHTML = '<svg class="w-5 h-5 ml-2 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Pulsing icon
+                    playingIndicator.classList.add('text-white'); // Ensure icon is white
+                    listItem.appendChild(playingIndicator);
+                }
+
+                listItem.addEventListener('click', () => {
+                    currentSongIndex = index;
+                    loadAndPlaySong(currentSongIndex);
+                });
+                songListElement.appendChild(listItem);
+            });
+        }
+
+        // Load and play song by index
+        function loadAndPlaySong(index) {
+            if (index >= 0 && index < playlist.length) {
+                const song = playlist[index];
+                audioPlayer.src = song.src;
+                currentSongTitle.textContent = song.name;
+                currentSongArtist.textContent = "Artis Tidak Diketahui"; // Can be extracted from metadata if available
+                audioPlayer.load();
+                audioPlayer.play();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                renderPlaylist(); // Update UI to highlight the new current song
+            } else {
+                // No song to play
+                audioPlayer.src = '';
+                currentSongTitle.textContent = 'Tidak ada lagu yang sedang diputar';
+                currentSongArtist.textContent = 'Unggah lagu untuk memulai';
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        }
+
+        // Play/Pause control
+        playPauseBtn.addEventListener('click', () => {
+            if (audioPlayer.paused) {
+                if (audioPlayer.src) {
+                    audioPlayer.play();
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                } else if (playlist.length > 0) { // If nothing is playing, play the first song
+                    currentSongIndex = 0;
+                    loadAndPlaySong(currentSongIndex);
+                }
+            } else {
+                audioPlayer.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        });
+
+        // Next song
+        nextBtn.addEventListener('click', () => {
+            if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex + 1) % playlist.length;
+                loadAndPlaySong(currentSongIndex);
+            }
+        });
+
+        // Previous song
+        prevBtn.addEventListener('click', () => {
+            if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+                loadAndPlaySong(currentSongIndex);
+            }
+        });
+
+        // Update progress bar and time
+        audioPlayer.addEventListener('timeupdate', () => {
+            const currentTime = audioPlayer.currentTime;
+            const duration = audioPlayer.duration;
+            
+            if (!isNaN(duration) && duration > 0) {
+                const progress = (currentTime / duration) * 100;
+                progressBar.value = progress;
+                currentTimeSpan.textContent = formatTime(currentTime);
+                durationSpan.textContent = formatTime(duration);
+            } else {
+                progressBar.value = 0;
+                currentTimeSpan.textContent = '0:00';
+                durationSpan.textContent = '0:00';
+            }
+        });
+
+        // Handle manual progress bar update by user
+        progressBar.addEventListener('input', () => {
+            const seekTime = (progressBar.value / 100) * audioPlayer.duration;
+            audioPlayer.currentTime = seekTime;
+        });
+
+        // Automatically play next song when current one ends
+        audioPlayer.addEventListener('ended', () => {
+            if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex + 1) % playlist.length;
+                loadAndPlaySong(currentSongIndex);
+            } else {
+                // If no more songs, reset state
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                currentSongTitle.textContent = 'Tidak ada lagu yang sedang diputar';
+                currentSongArtist.textContent = 'Unggah lagu untuk memulai';
+                progressBar.value = 0;
+                currentTimeSpan.textContent = '0:00';
+                durationSpan.textContent = '0:00';
+            }
+        });
+
+        // Handle song metadata once loaded
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            durationSpan.textContent = formatTime(audioPlayer.duration);
+        });
+
+        // Call renderPlaylist on initial load to show "no songs yet" message
+        renderPlaylist();
+    </script>
+</body>
+</html>
